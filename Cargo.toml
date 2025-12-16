@@ -1,6 +1,6 @@
 [package]
 name = "lsnote"
-version = "0.1.1"
+version = "1.0.0"
 edition = "2021"
 description = "A modern ls replacement with file notes, emoji icons, and git integration"
 authors = ["Your Name <you@example.com>"]
