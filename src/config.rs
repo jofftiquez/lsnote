@@ -20,7 +20,7 @@ pub fn get_config() -> &'static Config {
 }
 
 /// Main configuration structure.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Config {
     pub icons: IconsConfig,
     pub colors: ColorsConfig,
@@ -57,16 +57,6 @@ pub struct GitConfig {
     pub staged: String,
     pub untracked: String,
     pub ignored: String,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            icons: IconsConfig::default(),
-            colors: ColorsConfig::default(),
-            git: GitConfig::default(),
-        }
-    }
 }
 
 impl Default for IconsConfig {
