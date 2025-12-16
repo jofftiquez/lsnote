@@ -11,7 +11,7 @@ use chrono::{DateTime, Local};
 use colored::Colorize;
 
 use crate::config::{get_config, parse_color};
-use crate::git::{format_git_status, get_git_statuses, GitStatus};
+use crate::git::{format_git_status_ex, get_git_statuses, GitStatus};
 use crate::icons::{get_icon, is_executable};
 use crate::notes::get_note;
 
@@ -161,20 +161,28 @@ pub fn get_sorted_entries(path: &Path, show_all: bool) -> Vec<PathBuf> {
 
 /// List a directory's contents.
 pub fn list_directory(path: &Path, opts: &DisplayOptions) {
+    let output = build_list(path, opts, true);
+    print!("{}", output);
+}
+
+/// Build a directory listing and return it as a String.
+/// If `for_display` is true, includes ANSI colors. If false, plain text for clipboard.
+pub fn build_list(path: &Path, opts: &DisplayOptions, for_display: bool) -> String {
+    let mut output = String::new();
+
     if path.is_file() {
         let git_statuses = if opts.show_git {
             get_git_statuses(path.parent().unwrap_or(Path::new(".")))
         } else {
             HashMap::new()
         };
-        print_entry(path, opts, &git_statuses);
-        return;
+        output.push_str(&build_entry(path, opts, &git_statuses, for_display));
+        return output;
     }
 
     let items = get_sorted_entries(path, opts.show_all);
     if items.is_empty() && !path.is_dir() {
-        eprintln!("Error reading directory: {}", path.display());
-        return;
+        return format!("Error reading directory: {}\n", path.display());
     }
 
     let git_statuses = if opts.show_git {
@@ -190,16 +198,39 @@ pub fn list_directory(path: &Path, opts: &DisplayOptions) {
             .filter_map(|p| fs::metadata(p).ok())
             .map(|m| m.blocks())
             .sum();
-        println!("total {}", total / 2); // Convert 512-byte blocks to 1K blocks
+        output.push_str(&format!("total {}\n", total / 2)); // Convert 512-byte blocks to 1K blocks
     }
 
     for item in items {
-        print_entry(&item, opts, &git_statuses);
+        output.push_str(&build_entry(&item, opts, &git_statuses, for_display));
     }
+
+    output
 }
 
 /// Print a tree view of a directory.
 pub fn print_tree(path: &Path, opts: &DisplayOptions, prefix: &str, _is_last: bool) {
+    let output = build_tree(path, opts, prefix, true);
+    print!("{}", output);
+}
+
+/// Build a tree view of a directory and return it as a String.
+/// If `for_display` is true, includes ANSI colors. If false, plain text for clipboard.
+pub fn build_tree(path: &Path, opts: &DisplayOptions, prefix: &str, for_display: bool) -> String {
+    let mut output = String::new();
+    build_tree_recursive(path, opts, prefix, true, &mut output, for_display);
+    output
+}
+
+/// Recursive helper for building tree output.
+fn build_tree_recursive(
+    path: &Path,
+    opts: &DisplayOptions,
+    prefix: &str,
+    is_root: bool,
+    output: &mut String,
+    for_display: bool,
+) {
     let items = get_sorted_entries(path, opts.show_all);
 
     let git_statuses = if opts.show_git {
@@ -209,14 +240,20 @@ pub fn print_tree(path: &Path, opts: &DisplayOptions, prefix: &str, _is_last: bo
     };
 
     // Print current directory name if this is the root call
-    if prefix.is_empty() {
+    if is_root && prefix.is_empty() {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or(".");
         let config = get_config();
-        let colored_name = name.color(parse_color(&config.colors.directory)).bold();
-        if opts.show_icons {
-            println!("{} {}", config.icons.directory, colored_name);
+        if for_display {
+            let colored_name = name.color(parse_color(&config.colors.directory)).bold();
+            if opts.show_icons {
+                output.push_str(&format!("{} {}\n", config.icons.directory, colored_name));
+            } else {
+                output.push_str(&format!("{}\n", colored_name));
+            }
+        } else if opts.show_icons {
+            output.push_str(&format!("{} {}\n", config.icons.directory, name));
         } else {
-            println!("{}", colored_name);
+            output.push_str(&format!("{}\n", name));
         }
     }
 
@@ -239,11 +276,17 @@ pub fn print_tree(path: &Path, opts: &DisplayOptions, prefix: &str, _is_last: bo
         // Use absolute path for git status lookup
         let abs_item = item.canonicalize().unwrap_or_else(|_| item.to_path_buf());
         let git_status = git_statuses.get(&abs_item);
-        let colored_name = colorize_name(
-            file_name,
-            &metadata,
-            if opts.show_git { git_status } else { None },
-        );
+
+        let display_name = if for_display {
+            colorize_name(
+                file_name,
+                &metadata,
+                if opts.show_git { git_status } else { None },
+            )
+        } else {
+            file_name.to_string()
+        };
+
         let icon = if opts.show_icons {
             format!("{} ", get_icon(file_name, &metadata))
         } else {
@@ -251,36 +294,45 @@ pub fn print_tree(path: &Path, opts: &DisplayOptions, prefix: &str, _is_last: bo
         };
 
         let git_indicator = if opts.show_git {
-            format!("{} ", format_git_status(git_status))
+            format!("{} ", format_git_status_ex(git_status, for_display))
         } else {
             String::new()
         };
 
         let note = get_note(item);
         let note_str = if let Some(n) = note {
-            format!("  {}", format!("# {}", n).bright_black())
+            if for_display {
+                format!("  {}", format!("# {}", n).bright_black())
+            } else {
+                format!("  # {}", n)
+            }
         } else {
             String::new()
         };
 
-        println!(
-            "{}{}{}{}{}{}",
-            prefix, connector, git_indicator, icon, colored_name, note_str
-        );
+        output.push_str(&format!(
+            "{}{}{}{}{}{}\n",
+            prefix, connector, git_indicator, icon, display_name, note_str
+        ));
 
         // Recurse into directories
         if metadata.is_dir() {
             let new_prefix = format!("{}{}", prefix, child_prefix);
-            print_tree(item, opts, &new_prefix, is_last_item);
+            build_tree_recursive(item, opts, &new_prefix, false, output, for_display);
         }
     }
 }
 
-/// Print a single directory entry.
-fn print_entry(path: &Path, opts: &DisplayOptions, git_statuses: &HashMap<PathBuf, GitStatus>) {
+/// Build a single directory entry as a String.
+fn build_entry(
+    path: &Path,
+    opts: &DisplayOptions,
+    git_statuses: &HashMap<PathBuf, GitStatus>,
+    for_display: bool,
+) -> String {
     let metadata = match fs::symlink_metadata(path) {
         Ok(m) => m,
-        Err(_) => return,
+        Err(_) => return String::new(),
     };
 
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("?");
@@ -291,21 +343,32 @@ fn print_entry(path: &Path, opts: &DisplayOptions, git_statuses: &HashMap<PathBu
     let git_status = git_statuses.get(&abs_path);
 
     if opts.long_format {
-        print_long_format(path, &metadata, file_name, note, opts, git_status);
+        build_long_format(
+            path,
+            &metadata,
+            file_name,
+            note,
+            opts,
+            git_status,
+            for_display,
+        )
     } else {
-        print_short_format(file_name, &metadata, note, opts, git_status);
+        build_short_format(file_name, &metadata, note, opts, git_status, for_display)
     }
 }
 
-/// Print an entry in long format.
-fn print_long_format(
+/// Build an entry in long format as a String.
+fn build_long_format(
     path: &Path,
     metadata: &Metadata,
     name: &str,
     note: Option<String>,
     opts: &DisplayOptions,
     git_status: Option<&GitStatus>,
-) {
+    for_display: bool,
+) -> String {
+    let mut output = String::new();
+
     let mode = format_permissions(metadata.permissions(), metadata);
     let nlink = metadata.nlink();
     let uid = metadata.uid();
@@ -333,11 +396,16 @@ fn print_long_format(
     );
     let date_str = modified.format("%b %e %H:%M").to_string();
 
-    let colored_name = colorize_name(
-        name,
-        metadata,
-        if opts.show_git { git_status } else { None },
-    );
+    let display_name = if for_display {
+        colorize_name(
+            name,
+            metadata,
+            if opts.show_git { git_status } else { None },
+        )
+    } else {
+        name.to_string()
+    };
+
     let icon_prefix = if opts.show_icons {
         format!("{} ", get_icon(name, metadata))
     } else {
@@ -345,7 +413,7 @@ fn print_long_format(
     };
 
     let git_indicator = if opts.show_git {
-        format!("{} ", format_git_status(git_status))
+        format!("{} ", format_git_status_ex(git_status, for_display))
     } else {
         String::new()
     };
@@ -360,7 +428,7 @@ fn print_long_format(
         String::new()
     };
 
-    print!(
+    output.push_str(&format!(
         "{} {:>2} {:<8} {:<8} {} {} {}{}{}{}",
         mode,
         nlink,
@@ -370,40 +438,62 @@ fn print_long_format(
         date_str,
         git_indicator,
         icon_prefix,
-        colored_name,
+        display_name,
         link_target
-    );
+    ));
 
     if let Some(n) = note {
-        print!("  {}", format!("# {}", n).bright_black());
+        if for_display {
+            output.push_str(&format!("  {}", format!("# {}", n).bright_black()));
+        } else {
+            output.push_str(&format!("  # {}", n));
+        }
     }
-    println!();
+    output.push('\n');
+
+    output
 }
 
-/// Print an entry in short format.
-fn print_short_format(
+/// Build an entry in short format as a String.
+fn build_short_format(
     name: &str,
     metadata: &Metadata,
     note: Option<String>,
     opts: &DisplayOptions,
     git_status: Option<&GitStatus>,
-) {
+    for_display: bool,
+) -> String {
+    let mut output = String::new();
+
     if opts.show_git {
-        print!("{} ", format_git_status(git_status));
+        output.push_str(&format!(
+            "{} ",
+            format_git_status_ex(git_status, for_display)
+        ));
     }
     if opts.show_icons {
-        print!("{} ", get_icon(name, metadata));
+        output.push_str(&format!("{} ", get_icon(name, metadata)));
     }
 
-    let colored_name = colorize_name(
-        name,
-        metadata,
-        if opts.show_git { git_status } else { None },
-    );
-    print!("{}", colored_name);
+    let display_name = if for_display {
+        colorize_name(
+            name,
+            metadata,
+            if opts.show_git { git_status } else { None },
+        )
+    } else {
+        name.to_string()
+    };
+    output.push_str(&display_name);
 
     if let Some(n) = note {
-        print!("  {}", format!("# {}", n).bright_black());
+        if for_display {
+            output.push_str(&format!("  {}", format!("# {}", n).bright_black()));
+        } else {
+            output.push_str(&format!("  # {}", n));
+        }
     }
-    println!();
+    output.push('\n');
+
+    output
 }

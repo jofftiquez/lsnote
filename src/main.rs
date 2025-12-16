@@ -11,10 +11,11 @@ mod notes;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use arboard::Clipboard;
 use clap::Parser;
 
 use config::init_config;
-use display::{list_directory, print_tree, DisplayOptions};
+use display::{build_tree, list_directory, print_tree, DisplayOptions};
 use notes::{get_note, remove_note, set_note};
 
 #[derive(Parser, Debug)]
@@ -65,6 +66,10 @@ struct Args {
     /// Generate default config file at ~/.lsnote/config
     #[arg(long = "init-config")]
     init_config: bool,
+
+    /// Copy output to clipboard (use with -t for tree, -l for long format, etc.)
+    #[arg(short = 'c', long = "copy")]
+    copy: bool,
 }
 
 fn main() {
@@ -121,7 +126,35 @@ fn main() {
         tree_view: args.tree,
     };
 
-    if args.tree {
+    if args.copy {
+        // Build output with colors for display, without colors for clipboard
+        let (display_output, clipboard_output) = if args.tree {
+            (
+                build_tree(&args.path, &opts, "", true),
+                build_tree(&args.path, &opts, "", false),
+            )
+        } else {
+            (
+                display::build_list(&args.path, &opts, true),
+                display::build_list(&args.path, &opts, false),
+            )
+        };
+
+        // Print the colored version
+        print!("{}", display_output);
+
+        // Copy plain text version to clipboard
+        match Clipboard::new() {
+            Ok(mut clipboard) => {
+                if let Err(e) = clipboard.set_text(&clipboard_output) {
+                    eprintln!("Failed to copy to clipboard: {}", e);
+                } else {
+                    eprintln!("Copied to clipboard!");
+                }
+            }
+            Err(e) => eprintln!("Failed to access clipboard: {}", e),
+        }
+    } else if args.tree {
         print_tree(&args.path, &opts, "", true);
     } else {
         list_directory(&args.path, &opts);

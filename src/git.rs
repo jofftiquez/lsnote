@@ -117,26 +117,48 @@ pub fn get_git_statuses(dir: &Path) -> HashMap<PathBuf, GitStatus> {
     statuses
 }
 
-/// Format a git status as a colored symbol.
-pub fn format_git_status(status: Option<&GitStatus>) -> String {
+/// Format a git status as a symbol.
+/// If `colored` is true, includes ANSI color codes.
+pub fn format_git_status_ex(status: Option<&GitStatus>, colored: bool) -> String {
     let config = get_config();
     let git = &config.git;
     let colors = &config.colors;
 
     match status {
-        Some(GitStatus::Modified) => git
-            .modified
-            .color(parse_color(&colors.git_modified))
-            .to_string(),
-        Some(GitStatus::Staged) => git
-            .staged
-            .color(parse_color(&colors.git_staged))
-            .to_string(),
-        Some(GitStatus::Untracked) => git
-            .untracked
-            .color(parse_color(&colors.git_untracked))
-            .to_string(),
-        Some(GitStatus::Ignored) => git.ignored.bright_black().to_string(),
+        Some(GitStatus::Modified) => {
+            if colored {
+                git.modified
+                    .color(parse_color(&colors.git_modified))
+                    .to_string()
+            } else {
+                git.modified.clone()
+            }
+        }
+        Some(GitStatus::Staged) => {
+            if colored {
+                git.staged
+                    .color(parse_color(&colors.git_staged))
+                    .to_string()
+            } else {
+                git.staged.clone()
+            }
+        }
+        Some(GitStatus::Untracked) => {
+            if colored {
+                git.untracked
+                    .color(parse_color(&colors.git_untracked))
+                    .to_string()
+            } else {
+                git.untracked.clone()
+            }
+        }
+        Some(GitStatus::Ignored) => {
+            if colored {
+                git.ignored.bright_black().to_string()
+            } else {
+                git.ignored.clone()
+            }
+        }
         Some(GitStatus::Clean) | None => " ".to_string(),
     }
 }
