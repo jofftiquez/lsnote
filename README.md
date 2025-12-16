@@ -1,6 +1,14 @@
-# lsnote
+```
+ _                 _
+| |___ _ __   ___ | |_ ___
+| / __| '_ \ / _ \| __/ _ \
+| \__ \ | | | (_) | ||  __/
+|_|___/_| |_|\___/ \__\___|
+```
 
 > `ls` with notes — because sometimes files need context
+
+![lsnote example](example.png)
 
 A modern `ls` replacement with **file notes**, **emoji icons**, and **git integration**. No nerd fonts required.
 
@@ -21,18 +29,27 @@ $ lsnote
 ```
 
 **What you get:**
-- 📝 **Notes** — Add context to any file (`# Rust project manifest` above)
-- 🎨 **Icons** — Instant visual recognition by file type
-- 🔴 **Git status** — See what's modified (●), staged (◐), or untracked (?) at a glance
-- 🌳 **Tree view** — Explore nested directories beautifully
+- **Notes** — Add context to any file (`# Rust project manifest` above)
+- **Icons** — Instant visual recognition by file type
+- **Git status** — See what's modified (●), staged (◐), or untracked (?) at a glance
+- **Tree view** — Explore nested directories beautifully
 
 ## Installation
+
+### Cargo (recommended)
 
 ```bash
 cargo install lsnote
 ```
 
-Or build from source:
+<!-- ### Homebrew
+
+```bash
+brew tap jofftiquez/tap
+brew install lsnote
+``` -->
+
+### From source
 
 ```bash
 git clone https://github.com/jofftiquez/lsnote.git
@@ -40,6 +57,12 @@ cd lsnote
 cargo build --release
 cp target/release/lsnote ~/.local/bin/
 ```
+
+### Pre-built binaries
+
+Download from [GitHub Releases](https://github.com/jofftiquez/lsnote/releases) for:
+- macOS (Intel & Apple Silicon)
+- Linux (x64 & ARM64)
 
 ## Quick Start
 
