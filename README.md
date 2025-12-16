@@ -42,12 +42,12 @@ $ lsnote
 cargo install lsnote
 ```
 
-<!-- ### Homebrew
+### Homebrew
 
 ```bash
 brew tap jofftiquez/tap
 brew install lsnote
-``` -->
+```
 
 ### From source
 

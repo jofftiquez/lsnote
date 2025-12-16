@@ -1,0 +1,84 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-tap:
+    name: Update Homebrew Formula
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get release version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download checksums
+        run: |
+          curl -L -o checksums.txt "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/checksums.txt"
+          cat checksums.txt
+
+      - name: Extract SHA256 hashes
+        id: sha
+        run: |
+          echo "arm_mac=$(grep 'aarch64-apple-darwin' checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "intel_mac=$(grep 'x86_64-apple-darwin' checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "arm_linux=$(grep 'aarch64-unknown-linux-gnu' checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "intel_linux=$(grep 'x86_64-unknown-linux-gnu' checksums.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: jofftiquez/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        run: |
+          cat > homebrew-tap/Formula/lsnote.rb << 'EOF'
+          class Lsnote < Formula
+            desc "ls with notes - list directory contents with file notes, emoji icons, and git integration"
+            homepage "https://github.com/jofftiquez/lsnote"
+            version "${{ steps.version.outputs.version }}"
+            license "MIT"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/jofftiquez/lsnote/releases/download/v${{ steps.version.outputs.version }}/lsnote-aarch64-apple-darwin.tar.gz"
+                sha256 "${{ steps.sha.outputs.arm_mac }}"
+              end
+              on_intel do
+                url "https://github.com/jofftiquez/lsnote/releases/download/v${{ steps.version.outputs.version }}/lsnote-x86_64-apple-darwin.tar.gz"
+                sha256 "${{ steps.sha.outputs.intel_mac }}"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "https://github.com/jofftiquez/lsnote/releases/download/v${{ steps.version.outputs.version }}/lsnote-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${{ steps.sha.outputs.arm_linux }}"
+              end
+              on_intel do
+                url "https://github.com/jofftiquez/lsnote/releases/download/v${{ steps.version.outputs.version }}/lsnote-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${{ steps.sha.outputs.intel_linux }}"
+              end
+            end
+
+            def install
+              bin.install "lsnote"
+            end
+
+            test do
+              system "#{bin}/lsnote", "--version"
+            end
+          end
+          EOF
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/lsnote.rb
+          git commit -m "Update lsnote to v${{ steps.version.outputs.version }}"
+          git push
