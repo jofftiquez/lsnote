@@ -1,6 +1,6 @@
 [package]
 name = "lsnote"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "A modern ls replacement with file notes, emoji icons, and git integration"
 authors = ["Your Name <you@example.com>"]
@@ -18,6 +18,7 @@ chrono = "0.4"
 users = "0.11"
 libc = "0.2"
 dirs = "6"
+arboard = "3"
 
 [profile.release]
 lto = true
