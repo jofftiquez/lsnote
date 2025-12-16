@@ -1,0 +1,25 @@
+[package]
+name = "lsnote"
+version = "0.1.0"
+edition = "2021"
+description = "A modern ls replacement with file notes, emoji icons, and git integration"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+repository = "https://github.com/yourusername/lsn"
+homepage = "https://github.com/yourusername/lsn"
+readme = "README.md"
+keywords = ["cli", "ls", "files", "notes", "git"]
+categories = ["command-line-utilities", "filesystem"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+colored = "2"
+chrono = "0.4"
+users = "0.11"
+libc = "0.2"
+dirs = "6"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = 3
