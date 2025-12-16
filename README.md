@@ -33,6 +33,7 @@ $ lsnote
 - **Icons** — Instant visual recognition by file type
 - **Git status** — See what's modified (●), staged (◐), or untracked (?) at a glance
 - **Tree view** — Explore nested directories beautifully
+- **Copy to clipboard** — Share project structure with `-c` flag
 
 ## Installation
 
@@ -163,6 +164,32 @@ drwxr-xr-x  8 user staff   256B Dec 16 09:34 📁 src
 -rw-r--r--  1 user staff   3.5K Dec 16 09:34 🦀 main.rs  # Entry point
 ```
 
+### Copy to Clipboard
+
+Copy any view to clipboard — perfect for documentation, chat, or AI prompts:
+
+```bash
+# Copy regular listing
+$ lsnote -c src
+  🦀 config.rs
+  🦀 main.rs
+Copied to clipboard!
+
+# Copy tree view
+$ lsnote -ct src
+📁 src
+├── 🦀 config.rs
+└── 🦀 main.rs
+Copied to clipboard!
+
+# Copy long format
+$ lsnote -cl src
+-rw-r--r--  1 user staff  3.5K Dec 16 09:34 🦀 main.rs
+Copied to clipboard!
+```
+
+Combine `-c` with any other flags (`-t`, `-l`, `-a`, `-H`, etc.).
+
 ## Usage
 
 ```bash
@@ -172,6 +199,7 @@ Options:
   -a, --all              Show hidden files
   -l, --long             Long listing format
   -t, --tree             Tree view
+  -c, --copy             Copy tree to clipboard
   -H, --human-readable   Human-readable sizes (1.2K, 3.4M)
   -s, --set FILE NOTE    Set a note
   -g, --get FILE         Get a note
