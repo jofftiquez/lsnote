@@ -269,7 +269,9 @@ impl Config {
             }
             _ if key.starts_with("icon.name.") => {
                 let name = &key[10..];
-                self.icons.filenames.insert(name.to_lowercase(), value.into());
+                self.icons
+                    .filenames
+                    .insert(name.to_lowercase(), value.into());
             }
             _ => {}
         }

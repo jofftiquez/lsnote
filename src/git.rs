@@ -99,7 +99,9 @@ pub fn get_git_statuses(dir: &Path) -> HashMap<PathBuf, GitStatus> {
                     let current_status = statuses.get(p);
                     let should_update = match current_status {
                         None => true,
-                        Some(existing) => git_status_priority(&status) > git_status_priority(existing),
+                        Some(existing) => {
+                            git_status_priority(&status) > git_status_priority(existing)
+                        }
                     };
 
                     if should_update {
@@ -122,9 +124,18 @@ pub fn format_git_status(status: Option<&GitStatus>) -> String {
     let colors = &config.colors;
 
     match status {
-        Some(GitStatus::Modified) => git.modified.color(parse_color(&colors.git_modified)).to_string(),
-        Some(GitStatus::Staged) => git.staged.color(parse_color(&colors.git_staged)).to_string(),
-        Some(GitStatus::Untracked) => git.untracked.color(parse_color(&colors.git_untracked)).to_string(),
+        Some(GitStatus::Modified) => git
+            .modified
+            .color(parse_color(&colors.git_modified))
+            .to_string(),
+        Some(GitStatus::Staged) => git
+            .staged
+            .color(parse_color(&colors.git_staged))
+            .to_string(),
+        Some(GitStatus::Untracked) => git
+            .untracked
+            .color(parse_color(&colors.git_untracked))
+            .to_string(),
         Some(GitStatus::Ignored) => git.ignored.bright_black().to_string(),
         Some(GitStatus::Clean) | None => " ".to_string(),
     }

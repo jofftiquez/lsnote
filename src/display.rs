@@ -81,11 +81,15 @@ pub fn colorize_name(name: &str, metadata: &Metadata, git_status: Option<&GitSta
         _ => {
             // Default coloring based on file type
             if metadata.is_dir() {
-                name.color(parse_color(&colors.directory)).bold().to_string()
+                name.color(parse_color(&colors.directory))
+                    .bold()
+                    .to_string()
             } else if metadata.file_type().is_symlink() {
                 name.color(parse_color(&colors.symlink)).to_string()
             } else if is_executable(metadata) {
-                name.color(parse_color(&colors.executable)).bold().to_string()
+                name.color(parse_color(&colors.executable))
+                    .bold()
+                    .to_string()
             } else {
                 name.color(parse_color(&colors.file)).to_string()
             }
@@ -218,7 +222,11 @@ pub fn print_tree(path: &Path, opts: &DisplayOptions, prefix: &str, _is_last: bo
 
     for (i, item) in items.iter().enumerate() {
         let is_last_item = i == items.len() - 1;
-        let connector = if is_last_item { "└── " } else { "├── " };
+        let connector = if is_last_item {
+            "└── "
+        } else {
+            "├── "
+        };
         let child_prefix = if is_last_item { "    " } else { "│   " };
 
         let metadata = match fs::symlink_metadata(item) {
@@ -318,8 +326,11 @@ fn print_long_format(
         format!("{:>8}", size)
     };
 
-    let modified: DateTime<Local> =
-        DateTime::from(metadata.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH));
+    let modified: DateTime<Local> = DateTime::from(
+        metadata
+            .modified()
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH),
+    );
     let date_str = modified.format("%b %e %H:%M").to_string();
 
     let colored_name = colorize_name(
