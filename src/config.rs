@@ -1,6 +1,6 @@
 //! Configuration management for lsn.
 //!
-//! Loads user configuration from `~/.lsn/config` using a simple key=value format.
+//! Loads user configuration from `~/.lsnote/config` using a simple key=value format.
 
 use colored::Color;
 use std::collections::HashMap;
@@ -220,7 +220,7 @@ impl Default for GitConfig {
 }
 
 impl Config {
-    /// Load configuration from ~/.lsn/config.
+    /// Load configuration from ~/.lsnote/config.
     pub fn load() -> Result<Self, String> {
         let config_path = get_config_path()?;
         let mut config = Self::default();

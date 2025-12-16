@@ -62,7 +62,7 @@ struct Args {
     #[arg(long = "no-icons")]
     no_icons: bool,
 
-    /// Generate default config file at ~/.lsn/config
+    /// Generate default config file at ~/.lsnote/config
     #[arg(long = "init-config")]
     init_config: bool,
 }
@@ -128,11 +128,11 @@ fn main() {
     }
 }
 
-/// Get the data directory: ~/.lsn/
+/// Get the data directory: ~/.lsnote/
 pub fn get_data_dir() -> Result<PathBuf, String> {
     let data_dir = dirs::home_dir()
         .ok_or("Could not determine home directory")?
-        .join(".lsn");
+        .join(".lsnote");
 
     if !data_dir.exists() {
         fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;

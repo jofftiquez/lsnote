@@ -1,6 +1,6 @@
 //! Note storage for lsn.
 //!
-//! Notes are stored in `~/.lsn/notes` with the format:
+//! Notes are stored in `~/.lsnote/notes` with the format:
 //! `/full/path/to/file: note text`
 
 use std::collections::HashMap;
@@ -12,7 +12,7 @@ use crate::get_data_dir;
 
 const NOTES_FILE: &str = "notes";
 
-/// Get the notes file path: ~/.lsn/notes
+/// Get the notes file path: ~/.lsnote/notes
 fn get_notes_path() -> Result<PathBuf, String> {
     Ok(get_data_dir()?.join(NOTES_FILE))
 }
