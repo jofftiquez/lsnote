@@ -25,6 +25,7 @@ pub struct DisplayOptions {
     pub show_git: bool,
     #[allow(dead_code)]
     pub tree_view: bool,
+    pub show_header: bool,
 }
 
 /// Format a size in bytes to human-readable format.
@@ -199,6 +200,48 @@ pub fn build_list(path: &Path, opts: &DisplayOptions, for_display: bool) -> Stri
             .map(|m| m.blocks())
             .sum();
         output.push_str(&format!("total {}\n", total / 2)); // Convert 512-byte blocks to 1K blocks
+
+        // Add column headers if enabled
+        if opts.show_header {
+            let size_header = if opts.human_readable {
+                format!("{:>6}", "Size")
+            } else {
+                format!("{:>8}", "Size")
+            };
+
+            // Build header matching the exact data format:
+            // mode(10) nlink(2) user(8) group(8) size date [git+icon spacing] name
+            // After date: format adds 1 space, then git (2 chars) + icon (emoji ~2 + space)
+            let extra_spacing = match (opts.show_git, opts.show_icons) {
+                (true, true) => "    ",
+                (true, false) => " ",
+                (false, true) => "  ",
+                (false, false) => "",
+            };
+
+            if for_display {
+                // Colored headers - format width first, then colorize
+                let perms_h = format!("{:<10}", "Perms").magenta();
+                let links_h = format!("{:>2}", "L").bright_black();
+                let user_h = format!("{:<8}", "User").yellow();
+                let group_h = format!("{:<8}", "Group").yellow();
+                let size_h = size_header.green();
+                let modified_h = format!("{:>12}", "Modified").blue();
+                let name_h = "Name".cyan();
+
+                let header = format!(
+                    "{} {} {} {} {} {} {}{}\n",
+                    perms_h, links_h, user_h, group_h, size_h, modified_h, extra_spacing, name_h
+                );
+                output.push_str(&header);
+            } else {
+                let header = format!(
+                    "{:<10} {:>2} {:<8} {:<8} {} {:>12} {}Name\n",
+                    "Perms", "L", "User", "Group", size_header, "Modified", extra_spacing
+                );
+                output.push_str(&header);
+            }
+        }
     }
 
     for item in items {

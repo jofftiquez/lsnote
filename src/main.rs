@@ -18,6 +18,9 @@ use config::init_config;
 use display::{build_tree, list_directory, print_tree, DisplayOptions};
 use notes::{get_note, remove_note, set_note};
 
+// Hidden argument for clipboard daemon mode
+const CLIPBOARD_DAEMON_ARG: &str = "--__clipboard_daemon__";
+
 #[derive(Parser, Debug)]
 #[command(name = "lsnote")]
 #[command(about = "ls with notes - list directory contents with file notes")]
@@ -31,9 +34,9 @@ struct Args {
     #[arg(short = 'a', long = "all")]
     all: bool,
 
-    /// Use long listing format
-    #[arg(short = 'l', long = "long")]
-    long: bool,
+    /// Use short listing format (disable long format)
+    #[arg(short = 'S', long = "short")]
+    short: bool,
 
     /// Set note for a file
     #[arg(short = 's', long = "set", value_names = ["FILE", "NOTE"], num_args = 2)]
@@ -47,9 +50,9 @@ struct Args {
     #[arg(short = 'r', long = "remove")]
     remove: Option<PathBuf>,
 
-    /// Human-readable sizes (e.g., 1K, 234M, 2G)
-    #[arg(short = 'H', long = "human-readable")]
-    human_readable: bool,
+    /// Show raw byte sizes instead of human-readable (e.g., 1K, 234M)
+    #[arg(short = 'B', long = "bytes")]
+    bytes: bool,
 
     /// Disable git status indicators
     #[arg(long = "no-git")]
@@ -63,6 +66,10 @@ struct Args {
     #[arg(long = "no-icons")]
     no_icons: bool,
 
+    /// Hide column headers in long format
+    #[arg(long = "no-header")]
+    no_header: bool,
+
     /// Generate default config file at ~/.lsnote/config
     #[arg(long = "init-config")]
     init_config: bool,
@@ -73,6 +80,13 @@ struct Args {
 }
 
 fn main() {
+    // Check for hidden clipboard daemon mode
+    let raw_args: Vec<String> = std::env::args().collect();
+    if raw_args.len() >= 2 && raw_args[1] == CLIPBOARD_DAEMON_ARG {
+        run_clipboard_daemon();
+        return;
+    }
+
     let args = Args::parse();
 
     // Handle init-config
@@ -119,11 +133,12 @@ fn main() {
     let show_icons = !args.no_icons;
     let opts = DisplayOptions {
         show_all: args.all,
-        long_format: args.long,
+        long_format: !args.short,
         show_icons,
-        human_readable: args.human_readable,
+        human_readable: !args.bytes,
         show_git: !args.no_git,
         tree_view: args.tree,
+        show_header: !args.no_header,
     };
 
     if args.copy {
@@ -144,16 +159,7 @@ fn main() {
         print!("{}", display_output);
 
         // Copy plain text version to clipboard
-        match Clipboard::new() {
-            Ok(mut clipboard) => {
-                if let Err(e) = clipboard.set_text(&clipboard_output) {
-                    eprintln!("Failed to copy to clipboard: {}", e);
-                } else {
-                    eprintln!("Copied to clipboard!");
-                }
-            }
-            Err(e) => eprintln!("Failed to access clipboard: {}", e),
-        }
+        copy_to_clipboard(&clipboard_output);
     } else if args.tree {
         print_tree(&args.path, &opts, "", true);
     } else {
@@ -172,4 +178,81 @@ pub fn get_data_dir() -> Result<PathBuf, String> {
     }
 
     Ok(data_dir)
+}
+
+/// Copy text to clipboard, handling Wayland's clipboard persistence issue
+fn copy_to_clipboard(text: &str) {
+    let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
+
+    if is_wayland {
+        // On Wayland, spawn a daemon process that sets and holds the clipboard
+        use std::io::Write;
+        use std::process::{Command, Stdio};
+
+        let exe = match std::env::current_exe() {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Failed to get executable path: {}", e);
+                return;
+            }
+        };
+
+        match Command::new(exe)
+            .arg(CLIPBOARD_DAEMON_ARG)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        {
+            Ok(mut child) => {
+                if let Some(mut stdin) = child.stdin.take() {
+                    if stdin.write_all(text.as_bytes()).is_ok() {
+                        drop(stdin); // Close stdin to signal end of input
+                        eprintln!("Copied to clipboard!");
+                    } else {
+                        eprintln!("Failed to send data to clipboard daemon");
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to spawn clipboard daemon: {}", e);
+            }
+        }
+    } else {
+        // Non-Wayland: use arboard directly
+        match Clipboard::new() {
+            Ok(mut clipboard) => {
+                if let Err(e) = clipboard.set_text(text) {
+                    eprintln!("Failed to copy to clipboard: {}", e);
+                } else {
+                    eprintln!("Copied to clipboard!");
+                }
+            }
+            Err(e) => eprintln!("Failed to access clipboard: {}", e),
+        }
+    }
+}
+
+/// Run as a clipboard daemon - reads text from stdin, sets clipboard, holds for 60s
+fn run_clipboard_daemon() {
+    use std::io::Read;
+
+    // Read the text from stdin
+    let mut text = String::new();
+    if std::io::stdin().read_to_string(&mut text).is_err() {
+        std::process::exit(1);
+    }
+
+    // Detach from controlling terminal
+    unsafe {
+        libc::setsid();
+    }
+
+    // Set the clipboard and hold it
+    if let Ok(mut clipboard) = Clipboard::new() {
+        if clipboard.set_text(&text).is_ok() {
+            // Keep process alive to serve clipboard requests (Wayland requirement)
+            std::thread::sleep(std::time::Duration::from_secs(60));
+        }
+    }
 }
