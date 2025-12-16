@@ -189,6 +189,41 @@ git.staged = ◐
 git.untracked = ?
 ```
 
+## Tips
+
+### Replace `ls` with `lsnote`
+
+Add an alias to your shell config:
+
+**Bash** (`~/.bashrc`):
+```bash
+alias ls='lsnote'
+alias ll='lsnote -l'
+alias la='lsnote -la'
+alias lt='lsnote -t'
+```
+
+**Zsh** (`~/.zshrc`):
+```zsh
+alias ls='lsnote'
+alias ll='lsnote -l'
+alias la='lsnote -la'
+alias lt='lsnote -t'
+```
+
+**Fish** (`~/.config/fish/config.fish`):
+```fish
+alias ls 'lsnote'
+alias ll 'lsnote -l'
+alias la 'lsnote -la'
+alias lt 'lsnote -t'
+```
+
+Then reload your shell:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
 ## Data Storage
 
 - **Notes**: `~/.lsnote/notes`
