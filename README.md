@@ -10,7 +10,7 @@
 
 ![lsnote example](example.png)
 
-A modern `ls` replacement with **file notes**, **emoji icons**, and **git integration**. No nerd fonts required.
+A modern `ls` replacement with **file notes**, **emoji icons**, **git integration**, and **colored column headers**. No nerd fonts required.
 
 ## Why lsnote?
 
@@ -19,21 +19,24 @@ A modern `ls` replacement with **file notes**, **emoji icons**, and **git integr
 $ ls
 Cargo.lock  Cargo.toml  README.md  src  target
 
-# lsnote
+# lsnote - detailed view with colored headers by default
 $ lsnote
-  🦀 Cargo.lock
-  🦀 Cargo.toml  # Rust project manifest
-● 📖 README.md
-● 📁 src
-  📁 target
+Perms       L User     Group      Size     Modified     Name
+-rw-r--r--  1 user     user      26.8K Dec 16 20:10   🦀 Cargo.lock
+-rw-r--r--  1 user     user       637B Dec 16 20:10   🦀 Cargo.toml  # Rust manifest
+-rw-r--r--  1 user     user       5.5K Dec 16 20:10   📖 README.md
+drwxr-xr-x  1 user     user        96B Dec 16 20:12 ● 📁 src
+drwxr-xr-x  1 user     user        80B Dec 16 20:12   📁 target
 ```
 
 **What you get:**
-- **Notes** — Add context to any file (`# Rust project manifest` above)
+- **Detailed view by default** — Permissions, size, dates, and colored headers
+- **Human-readable sizes** — `26.8K` instead of `27464`
+- **Notes** — Add context to any file (`# Rust manifest` above)
 - **Icons** — Instant visual recognition by file type
 - **Git status** — See what's modified (●), staged (◐), or untracked (?) at a glance
 - **Tree view** — Explore nested directories beautifully
-- **Copy to clipboard** — Share project structure with `-c` flag
+- **Copy to clipboard** — Share project structure with `-c` flag (works on Wayland & X11)
 
 ## Installation
 
@@ -154,14 +157,32 @@ $ lsnote -t src
 └── 🦀 notes.rs
 ```
 
-### Long Format
+### Long Format (Default)
 
-Detailed view with permissions, size, and dates:
+The detailed view with permissions, size, dates, and colored headers is shown by default:
 
 ```bash
-$ lsnote -lH
-drwxr-xr-x  8 user staff   256B Dec 16 09:34 📁 src
--rw-r--r--  1 user staff   3.5K Dec 16 09:34 🦀 main.rs  # Entry point
+$ lsnote
+Perms       L User     Group      Size     Modified     Name
+drwxr-xr-x  1 user     user       256B Dec 16 09:34   📁 src
+-rw-r--r--  1 user     user       3.5K Dec 16 09:34   🦀 main.rs  # Entry point
+```
+
+Use `-S` for a compact short listing:
+
+```bash
+$ lsnote -S
+  🦀 Cargo.lock
+  🦀 Cargo.toml
+● 📁 src
+```
+
+Use `-B` to show raw byte sizes instead of human-readable:
+
+```bash
+$ lsnote -B
+Perms       L User     Group        Size     Modified     Name
+-rw-r--r--  1 user     user        27464 Dec 16 09:34   🦀 Cargo.lock
 ```
 
 ### Copy to Clipboard
@@ -169,10 +190,10 @@ drwxr-xr-x  8 user staff   256B Dec 16 09:34 📁 src
 Copy any view to clipboard — perfect for documentation, chat, or AI prompts:
 
 ```bash
-# Copy regular listing
-$ lsnote -c src
-  🦀 config.rs
-  🦀 main.rs
+# Copy current listing
+$ lsnote -c
+Perms       L User     Group      Size     Modified     Name
+-rw-r--r--  1 user     user       3.5K Dec 16 09:34   🦀 main.rs
 Copied to clipboard!
 
 # Copy tree view
@@ -182,13 +203,16 @@ $ lsnote -ct src
 └── 🦀 main.rs
 Copied to clipboard!
 
-# Copy long format
-$ lsnote -cl src
--rw-r--r--  1 user staff  3.5K Dec 16 09:34 🦀 main.rs
+# Copy short format
+$ lsnote -cS
+  🦀 Cargo.lock
+  🦀 Cargo.toml
 Copied to clipboard!
 ```
 
-Combine `-c` with any other flags (`-t`, `-l`, `-a`, `-H`, etc.).
+Works on **Linux** (Wayland & X11), **macOS**, and **Windows**. No external clipboard tools required.
+
+Combine `-c` with any other flags (`-t`, `-S`, `-a`, `-B`, etc.).
 
 ## Usage
 
@@ -197,19 +221,22 @@ lsnote [OPTIONS] [PATH]
 
 Options:
   -a, --all              Show hidden files
-  -l, --long             Long listing format
+  -S, --short            Short listing (disable detailed view)
+  -B, --bytes            Show raw byte sizes (disable human-readable)
   -t, --tree             Tree view
-  -c, --copy             Copy tree to clipboard
-  -H, --human-readable   Human-readable sizes (1.2K, 3.4M)
+  -c, --copy             Copy output to clipboard
   -s, --set FILE NOTE    Set a note
   -g, --get FILE         Get a note
   -r, --remove FILE      Remove a note
-      --no-git           Disable git status
+      --no-git           Disable git status indicators
       --no-icons         Disable icons
+      --no-header        Hide column headers
       --init-config      Generate config file
   -h, --help             Print help
   -V, --version          Print version
 ```
+
+**Defaults:** Long format with human-readable sizes and colored headers are enabled by default.
 
 ## Configuration
 
@@ -249,25 +276,28 @@ Add an alias to your shell config:
 **Bash** (`~/.bashrc`):
 ```bash
 alias ls='lsnote'
-alias ll='lsnote -l'
-alias la='lsnote -la'
-alias lt='lsnote -t'
+alias ll='lsnote'           # Already long format by default
+alias la='lsnote -a'        # Show hidden files
+alias lt='lsnote -t'        # Tree view
+alias lss='lsnote -S'       # Short format
 ```
 
 **Zsh** (`~/.zshrc`):
 ```zsh
 alias ls='lsnote'
-alias ll='lsnote -l'
-alias la='lsnote -la'
+alias ll='lsnote'
+alias la='lsnote -a'
 alias lt='lsnote -t'
+alias lss='lsnote -S'
 ```
 
 **Fish** (`~/.config/fish/config.fish`):
 ```fish
 alias ls 'lsnote'
-alias ll 'lsnote -l'
-alias la 'lsnote -la'
+alias ll 'lsnote'
+alias la 'lsnote -a'
 alias lt 'lsnote -t'
+alias lss 'lsnote -S'
 ```
 
 Then reload your shell:
