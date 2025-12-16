@@ -1,4 +1,4 @@
-//! Note storage for lsn.
+//! Note storage for lsnote.
 //!
 //! Notes are stored in `~/.lsnote/notes` with the format:
 //! `/full/path/to/file: note text`

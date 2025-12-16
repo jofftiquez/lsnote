@@ -1,4 +1,4 @@
-//! Configuration management for lsn.
+//! Configuration management for lsnote.
 //!
 //! Loads user configuration from `~/.lsnote/config` using a simple key=value format.
 

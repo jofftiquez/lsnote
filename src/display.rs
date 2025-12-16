@@ -1,4 +1,4 @@
-//! Display and output formatting for lsn.
+//! Display and output formatting for lsnote.
 //!
 //! Handles directory listing, tree view, and entry formatting.
 

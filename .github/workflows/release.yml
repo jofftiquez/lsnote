@@ -78,14 +78,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: true
 
       - name: Create checksums
         run: |
           cd artifacts
-          for dir in */; do
-            mv "$dir"/*.tar.gz . 2>/dev/null || true
-          done
-          rmdir */ 2>/dev/null || true
           sha256sum *.tar.gz > checksums.txt
           cat checksums.txt
 

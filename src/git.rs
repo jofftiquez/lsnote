@@ -1,4 +1,4 @@
-//! Git integration for lsn.
+//! Git integration for lsnote.
 //!
 //! Provides git status detection and formatting for files and directories.
 

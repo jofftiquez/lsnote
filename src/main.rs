@@ -1,4 +1,4 @@
-//! lsn - ls with notes
+//! lsnote - ls with notes
 //!
 //! A modern `ls` replacement with file notes, emoji icons, and git integration.
 

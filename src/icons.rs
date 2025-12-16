@@ -1,4 +1,4 @@
-//! Icon lookup for lsn.
+//! Icon lookup for lsnote.
 //!
 //! Determines the appropriate emoji icon for a file based on:
 //! 1. File type (directory, symlink)
