@@ -38,6 +38,10 @@ struct Args {
     #[arg(short = 'S', long = "short")]
     short: bool,
 
+    /// Use long listing format (default, kept for compatibility with -la)
+    #[arg(short = 'l', long = "long")]
+    long: bool,
+
     /// Set note for a file
     #[arg(short = 's', long = "set", value_names = ["FILE", "NOTE"], num_args = 2)]
     set: Option<Vec<String>>,
@@ -131,9 +135,11 @@ fn main() {
 
     // List directory
     let show_icons = !args.no_icons;
+    // -l overrides -S if both specified; long format is default
+    let long_format = args.long || !args.short;
     let opts = DisplayOptions {
         show_all: args.all,
-        long_format: !args.short,
+        long_format,
         show_icons,
         human_readable: !args.bytes,
         show_git: !args.no_git,
