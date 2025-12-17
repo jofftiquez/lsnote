@@ -8,7 +8,7 @@
 
 > `ls` with notes — because sometimes files need context
 
-![lsnote example](example.png)
+<img width="1346" height="263" alt="example" src="https://github.com/user-attachments/assets/6aecfed3-d00f-4a84-9292-108a64119bd1" />
 
 A modern `ls` replacement with **file notes**, **emoji icons**, **git integration**, and **colored column headers**. No nerd fonts required.
 
